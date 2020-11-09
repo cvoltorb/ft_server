@@ -6,35 +6,34 @@
 #    By: cvoltorb <cvoltorb@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2020/08/08 17:35:25 by cvoltorb          #+#    #+#              #
-#    Updated: 2020/11/07 16:45:58 by cvoltorb         ###   ########.fr        #
+#    Updated: 2020/11/10 02:17:23 by cvoltorb         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 FROM debian:buster
 
-RUN apt-get update
+RUN apt-get update -y
 RUN apt-get upgrade -y
-RUN apt-get -y install wget && apt-get -y install nginx && apt-get -y install mariadb-server
-RUN apt-get -y install php7.3 php-mysql php-fpm php-pdo php-gd php-cli php-mbstring
+RUN apt-get -y install vim nginx openssl mariadb-server wget
+RUN apt-get -y install php-fpm php-mysql php-mbstring php-zip php-gd
 
-WORKDIR /var/www/html/
+RUN mkdir /var/www/cvoltorb
+RUN mkdir /etc/nginx/ssl
+RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/ssl.key -out /etc/nginx/ssl/ssl.pem -subj "/C=RU/ST=Moscow/L=Moscow/O=School 21/OU=cvoltorb/CN=cvoltorb.com" ;
+WORKDIR /var/www/cvoltorb/
+COPY srcs/ .
 
-RUN wget https://files.phpmyadmin.net/phpMyAdmin/5.0.1/phpMyAdmin-5.0.1-english.tar.gz
-RUN tar -xf phpMyAdmin-5.0.1-english.tar.gz && rm -rf phpMyAdmin-5.0.1-english.tar.gz
-RUN mv phpMyAdmin-5.0.1-english phpmyadmin
-
-COPY ./srcs/config.inc.php phpmyadmin
+RUN wget https://files.phpmyadmin.net/phpMyAdmin/5.0.4/phpMyAdmin-5.0.4-all-languages.tar.gz
+RUN tar -xf phpMyAdmin-5.0.4-all-languages.tar.gz && rm -f phpMyAdmin-5.0.4-all-languages.tar.gz
+RUN mv phpMyAdmin-5.0.4-all-languages phpmyadmin
+RUN mv config.inc.php ./phpmyadmin/
 
 RUN wget https://wordpress.org/latest.tar.gz
-RUN tar -xvzf latest.tar.gz && rm -rf latest.tar.gz
+RUN tar -xvzf latest.tar.gz && rm -f latest.tar.gz
 
-COPY ./srcs/wp-config.php /var/www/html
-COPY ./srcs/default /etc/nginx/sites-available
-
-RUN openssl req -x509 -nodes -days 365 -subj "/C=RU/ST=Moscow/L=Moscow/O=School 21/OU=cvoltorb/CN=wpsite" -newkey rsa:2048 -keyout /etc/ssl/nginx-selfsigned.key -out /etc/ssl/nginx-selfsigned.crt;
-
+RUN mv nginx.conf /etc/nginx/sites-available/default
 RUN chown -R www-data:www-data *
 RUN chmod -R 755 /var/www/*
-COPY ./srcs/init.sh ./
-
+RUN chmod +x *.sh
+EXPOSE 80 443
 CMD bash init.sh
